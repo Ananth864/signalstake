@@ -37,14 +37,23 @@ npm test    # 17 tests: both happy paths + every mandated rejection (AGENTS.md l
 
 ## Sepolia deployment
 
-```bash
-npm run new-burner    # writes a throwaway DEPLOYER_PRIVATE_KEY to .env, prints the address
-# fund the printed address with Sepolia ETH (Google Cloud / Alchemy / QuickNode faucet,
-# or the professor's 0.01-ETH form), then:
-npm run deploy:sepolia
-```
+**Deployed — all 9 contracts verified with code on-chain (regulator = `0x991a1A42D25A4ad4815e2Ac9BBB50288b48DFd5A`, key in `.env`):**
 
-The deployer acts as the REGULATOR (the regulator bootstraps the network). Demo parameters are deliberately short (dispute window and withdraw cooldown 5 minutes, signal TTL 2 hours) so the live testnet flow is demonstrable in minutes; production values would use multi-day windows. The dashboard offers a read-only Sepolia view once `app/public/sepolia.json` exists.
+| Contract | Address |
+|---|---|
+| MockSGD | [0xd8906ca998517543C6Ff2302B6F0DFDF88B3281d](https://sepolia.etherscan.io/address/0xd8906ca998517543C6Ff2302B6F0DFDF88B3281d) |
+| ParticipantRegistry | [0x5f1e3b44A179Efd19E183d44bEEDFF980072ba76](https://sepolia.etherscan.io/address/0x5f1e3b44A179Efd19E183d44bEEDFF980072ba76) |
+| Settings | [0xb325b99789fF702c26288cDC86c64aDe9366CFd3](https://sepolia.etherscan.io/address/0xb325b99789fF702c26288cDC86c64aDe9366CFd3) |
+| StakeVault | [0xC5202c8827fD38F7438409211e9CC3c2e9177Cf4](https://sepolia.etherscan.io/address/0xC5202c8827fD38F7438409211e9CC3c2e9177Cf4) |
+| SignalRegistry | [0x44995e9A9BfFaFA875486385B828C24e54f3061D](https://sepolia.etherscan.io/address/0x44995e9A9BfFaFA875486385B828C24e54f3061D) |
+| CaseManager | [0xB243a46a8DB4B2E2c3c04e3e64eD053655E09B74](https://sepolia.etherscan.io/address/0xB243a46a8DB4B2E2c3c04e3e64eD053655E09B74) |
+| OutcomeOracle | [0x32fD8e91aB829aa5Bdf19A56cf800E76dC5A0b1f](https://sepolia.etherscan.io/address/0x32fD8e91aB829aa5Bdf19A56cf800E76dC5A0b1f) |
+| Reputation | [0x17ad7546232D289E798F106160A25f0340919b33](https://sepolia.etherscan.io/address/0x17ad7546232D289E798F106160A25f0340919b33) |
+| RewardPool | [0x5df68f7eEeC527759D50fd5a802f84606884261b](https://sepolia.etherscan.io/address/0x5df68f7eEeC527759D50fd5a802f84606884261b) |
+
+To redeploy fresh (e.g. after another faucet drip): `npm run new-burner`, fund the printed address, then `npm run deploy:sepolia`. The dashboard offers a read-only Sepolia view once `app/public/sepolia.json` exists.
+
+Notes for the demo: the local node hosts the full interactive flow (all four persona keys); on Sepolia only the regulator key is held, so new members are onboarded via `ParticipantRegistry.addMember` from the deployer wallet. Sepolia creation gas runs several times the local equivalent — the deploy scripts track nonces locally, pin fees, and size gas from the node's own simulation (see `scripts/deploy.ts`, `scripts/deploy-resume.ts`).
 
 ## Layout
 

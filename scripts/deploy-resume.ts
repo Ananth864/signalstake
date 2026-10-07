@@ -34,13 +34,6 @@ const FEE = {
   maxPriorityFeePerGas: ethers.parseUnits("0.4", "gwei"),
 };
 
-const GAS_LIMITS: Record<string, bigint> = {
-  CaseManager: 2924610n,   // 3x local 974870 (Sepolia creation gas runs ~1.7-2.8x local)
-  OutcomeOracle: 3141078n, // 3x local 1047026
-  Reputation: 1366071n,    // 3x local 455357
-  RewardPool: 3340164n,    // 3x local 1113388
-};
-
 async function main() {
   if (network.name !== "sepolia") throw new Error("resume script is Sepolia-only");
   const [regulator] = await ethers.getSigners();
@@ -52,12 +45,16 @@ async function main() {
   async function deploy(name: string, ...args: unknown[]) {
     const f = await ethers.getContractFactory(name);
     const createTx = await f.getDeployTransaction(...args);
+    // Sepolia executes creations at several x local gas; ask the node for the
+    // real number (it simulates the run) and pad it by 20%.
+    const est = await ethers.provider.estimateGas({ from: regulator.address, data: createTx.data });
+    const gasLimit = (est * 12n) / 10n;
     const sent = await regulator.sendTransaction({
-      ...createTx, nonce: nextNonce(), ...FEE, gasLimit: GAS_LIMITS[name],
+      ...createTx, nonce: nextNonce(), ...FEE, gasLimit,
     });
     const receipt = await sent.wait();
     if (receipt?.status !== 1) throw new Error(`${name} failed (gasUsed ${receipt?.gasUsed})`);
-    console.log(`  ${name}: ${receipt.contractAddress} (gasUsed ${receipt.gasUsed})`);
+    console.log(`  ${name}: ${receipt.contractAddress} (gasUsed ${receipt.gasUsed}, limit ${gasLimit})`);
     return ethers.getContractAt(name, receipt!.contractAddress!);
   }
 
