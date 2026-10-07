@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.*
+!.env.example
+cache
+artifacts
+coverage
+coverage.json
+typechain-types
+app/node_modules
+app/dist
+.DS_Store
+app/public/*.json
+app/tsconfig.tsbuildinfo
