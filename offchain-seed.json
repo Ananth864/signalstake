@@ -1,0 +1,9 @@
+{
+  "signals": [
+    {
+      "commitHash": "0xc435732161b5d638b21c6b272d5aa098ac14c96393f20d0cedbd380a703bd7d1",
+      "nonce": "0x8020f631c5e0da58071b315dcb5359660aeaf1bee5f2ef9d2819670215bb7a22",
+      "details": "{\"scenario\":\"mdm-tan\",\"risk\":\"Customer on 20-minute call with a number linked to a fake government official scam\",\"transferAmount\":\"S$40,000\",\"paymentRef\":\"XFER-88123\"}"
+    }
+  ]
+}
