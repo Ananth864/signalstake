@@ -31,6 +31,11 @@ export default function App() {
 
   useEffect(() => { channelInit(); fetchDeployments().then(setDeployments); }, []);
 
+  // A hosted build ships only sepolia.json; never sit on a dead network.
+  useEffect(() => {
+    setNet((n) => (deployments[n] ? n : deployments.sepolia ? "sepolia" : deployments.localhost ? "localhost" : n));
+  }, [deployments]);
+
   const clients: Clients | null = useMemo(
     () => (deployments[net] ? makeClients(deployments[net], net) : null),
     [deployments, net]

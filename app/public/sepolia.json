@@ -1,0 +1,20 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deployedAt": "2026-10-07T13:52:06.920Z",
+  "contracts": {
+    "MockSGD": "0xd8906ca998517543C6Ff2302B6F0DFDF88B3281d",
+    "ParticipantRegistry": "0x5f1e3b44A179Efd19E183d44bEEDFF980072ba76",
+    "Settings": "0xb325b99789fF702c26288cDC86c64aDe9366CFd3",
+    "StakeVault": "0xC5202c8827fD38F7438409211e9CC3c2e9177Cf4",
+    "SignalRegistry": "0x44995e9A9BfFaFA875486385B828C24e54f3061D",
+    "CaseManager": "0xB243a46a8DB4B2E2c3c04e3e64eD053655E09B74",
+    "OutcomeOracle": "0x32fD8e91aB829aa5Bdf19A56cf800E76dC5A0b1f",
+    "Reputation": "0x17ad7546232D289E798F106160A25f0340919b33",
+    "RewardPool": "0x5df68f7eEeC527759D50fd5a802f84606884261b"
+  },
+  "personas": {
+    "regulator": "0x991a1A42D25A4ad4815e2Ac9BBB50288b48DFd5A"
+  },
+  "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com"
+}
