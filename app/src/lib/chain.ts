@@ -86,7 +86,7 @@ export async function fetchDeployments(): Promise<{ localhost?: Deployment; sepo
   const out: { localhost?: Deployment; sepolia?: Deployment } = {};
   for (const net of ["localhost", "sepolia"] as const) {
     try {
-      const res = await fetch(`/${net}.json`);
+      const res = await fetch(`./${net}.json`);
       if (res.ok) out[net] = await res.json();
     } catch { /* not deployed */ }
   }

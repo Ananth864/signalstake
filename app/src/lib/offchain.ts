@@ -26,7 +26,7 @@ function save(store: Record<string, ChannelEntry>) {
 }
 
 export function channelInit() {
-  fetch("/offchain-seed.json")
+  fetch("./offchain-seed.json")
     .then((r) => (r.ok ? r.json() : null))
     .then((seed: { signals: ChannelEntry[] } | null) => {
       if (!seed) return;
