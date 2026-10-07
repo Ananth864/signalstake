@@ -18,6 +18,10 @@ export default function App() {
   const [net, setNet] = useState<Net>("localhost");
   const [view, setView] = useState<View>("dashboard");
   const [tutStep, setTutStep] = useState<number | null>(null);
+  // The tutorial button glows until pressed once; the dismissal sticks per browser.
+  const [tutLaunched, setTutLaunched] = useState(
+    () => localStorage.getItem("signalstake-tutorial-launched") === "1"
+  );
   const [persona, setPersona] = useState<PersonaId>("regulator");
   const [tick, setTick] = useState(0);
   const [status, setStatus] = useState("starting…");
@@ -64,7 +68,12 @@ export default function App() {
     return () => { alive = false; clearTimeout(timer); };
   }, [clients, tick]);
 
-  const startTutorial = useCallback(() => { setView("dashboard"); setTutStep(0); }, []);
+  const startTutorial = useCallback(() => {
+    localStorage.setItem("signalstake-tutorial-launched", "1");
+    setTutLaunched(true);
+    setView("dashboard");
+    setTutStep(0);
+  }, []);
   const gotoView = useCallback((v: View) => { setView(v); if (v === "guide") setTutStep(null); }, []);
   const netOptions = { localhost: !!deployments.localhost, sepolia: !!deployments.sepolia };
 
@@ -72,7 +81,7 @@ export default function App() {
     return (
       <Shell status={status} net={net} netOptions={netOptions} onNet={setNet}
         view={view} onView={gotoView} onRunTutorial={startTutorial}
-        notice={notice} onDismissNotice={() => setNotice(null)}>
+        notice={notice} onDismissNotice={() => setNotice(null)} tutGlow={!tutLaunched}>
         <GuidePage onRunTutorial={startTutorial} />
       </Shell>
     );
@@ -81,7 +90,7 @@ export default function App() {
   if (!deployments.localhost && !deployments.sepolia) {
     return (
       <Shell status="no deployment found" net={net} view={view} onView={gotoView} onRunTutorial={startTutorial}
-        notice={notice} onDismissNotice={() => setNotice(null)}>
+        notice={notice} onDismissNotice={() => setNotice(null)} tutGlow={!tutLaunched}>
         <EmptyDeployment />
       </Shell>
     );
@@ -89,7 +98,7 @@ export default function App() {
   if (!clients || !data || !send) {
     return (
       <Shell status={status} net={net} view={view} onView={gotoView} onRunTutorial={startTutorial}
-        notice={notice} onDismissNotice={() => setNotice(null)}>
+        notice={notice} onDismissNotice={() => setNotice(null)} tutGlow={!tutLaunched}>
         {error ? <div className="empty">Cannot reach {net}: <span className="mono">{error}</span></div> : <div className="empty">connecting to {net}…</div>}
       </Shell>
     );
@@ -108,6 +117,7 @@ export default function App() {
       onRunTutorial={startTutorial}
       notice={notice}
       onDismissNotice={() => setNotice(null)}
+      tutGlow={!tutLaunched}
     >
       <div className="board">
         <div>
@@ -131,13 +141,14 @@ export default function App() {
 }
 
 function Shell({
-  children, status, net, netOptions, onNet, persona, onPersona, view, onView, onRunTutorial, notice, onDismissNotice,
+  children, status, net, netOptions, onNet, persona, onPersona, view, onView, onRunTutorial, notice, onDismissNotice, tutGlow = true,
 }: {
   children: React.ReactNode; status: string;
   net?: Net; netOptions?: { localhost: boolean; sepolia: boolean }; onNet?: (n: Net) => void;
   persona?: PersonaId; onPersona?: (p: PersonaId) => void;
   view: View; onView: (v: View) => void; onRunTutorial: () => void;
   notice?: { kind: "busy" | "ok" | "err"; text: string } | null; onDismissNotice?: () => void;
+  tutGlow?: boolean;
 }) {
   return (
     <>
@@ -152,7 +163,7 @@ function Shell({
               <button aria-pressed={view === "guide"} onClick={() => onView("guide")}>guide</button>
             </span>
           </nav>
-          <button className="tut-launch" onClick={onRunTutorial}>run tutorial</button>
+          <button className={"tut-launch" + (tutGlow ? " glow" : "")} onClick={onRunTutorial}>run tutorial</button>
           {netOptions?.sepolia && netOptions?.localhost && onNet && net && (
             <span className="seg net-seg" aria-label="Network">
               <button aria-pressed={net === "localhost"} onClick={() => onNet("localhost")}>local node</button>

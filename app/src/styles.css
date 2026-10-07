@@ -222,6 +222,7 @@ input.w-s { width: 110px; } input.w-m { width: 200px; } textarea { width: 100%; 
 
 @media (prefers-reduced-motion: reduce) {
   .crossing, .ledger-row { animation: none; }
+  .tut-launch.glow { animation: none; border-color: var(--chain); color: var(--chain); }
 }
 
 /* ---------- view nav + tutorial launch (masthead) ---------- */
@@ -233,6 +234,11 @@ input.w-s { width: 110px; } input.w-m { width: 200px; } textarea { width: 100%; 
   padding: 5px 13px;
 }
 .tut-launch:hover { background: var(--ink); color: #fff; }
+@keyframes tut-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(31, 79, 216, 0); }
+  50% { box-shadow: 0 0 0 7px rgba(31, 79, 216, 0.28); border-color: var(--chain); color: var(--chain); }
+}
+.tut-launch.glow { animation: tut-glow 1.9s ease-in-out infinite; }
 
 /* ---------- guide page ---------- */
 
