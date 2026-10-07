@@ -97,6 +97,9 @@ export function Tutorial({
           el.scrollIntoView({ behavior: "smooth", block: "center" });
           spotted.current = el;
         }
+      } else {
+        // Steps without a target (welcome, closing) start from the top.
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     }, wait);
     return () => clearTimeout(t);

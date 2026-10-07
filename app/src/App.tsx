@@ -73,8 +73,13 @@ export default function App() {
     setTutLaunched(true);
     setView("dashboard");
     setTutStep(0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
-  const gotoView = useCallback((v: View) => { setView(v); if (v === "guide") setTutStep(null); }, []);
+  const gotoView = useCallback((v: View) => {
+    setView(v);
+    if (v === "guide") setTutStep(null);
+    window.scrollTo(0, 0);
+  }, []);
   const netOptions = { localhost: !!deployments.localhost, sepolia: !!deployments.sepolia };
 
   if (view === "guide") {
