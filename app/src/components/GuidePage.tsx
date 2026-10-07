@@ -1,8 +1,7 @@
 import { Btn, Chip } from "./ui";
 
 /**
- * The Guide: how to run SignalStake — the cast, the happy path, the false
- * alarm, the guardrails, and the commands. Static content; no chain needed.
+ * The Guide: how to run SignalStake. Static content; no chain needed.
  */
 export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
   return (
@@ -11,24 +10,24 @@ export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
         <p className="guide-eyebrow">field guide</p>
         <h1>How to use SignalStake</h1>
         <p className="guide-lede">
-          Telcos stake money to warn banks about scams. Banks hold the payment and open a case.
-          A bank <b>plus an independent confirmer</b> sign the outcome; the contract then pays a
-          reward — or takes the stake. Nobody edits the ledger; it only settles what two signatures agree on.
+          A telco stakes money before it can warn a bank about a scam. The bank holds the payment and opens a case.
+          The bank and an independent confirmer both sign the outcome. The contract then pays the telco a reward,
+          or takes part of its stake. Warning details never go on-chain, only their hash.
         </p>
         <div className="guide-cta">
           <Btn variant="chain" onClick={onRunTutorial}>Run the interactive tutorial</Btn>
           <span className="hint">12 short steps, right on the live dashboard.</span>
         </div>
         <div className="mini-lanes" aria-hidden="true">
-          <div className="mini-off">off-chain · private<span>warning details — caller, amount, payment ref</span></div>
+          <div className="mini-off">off-chain · private<span>warning details: caller, amount, payment ref</span></div>
           <div className="mini-boundary">the boundary — commitments cross, details never do</div>
           <div className="mini-on">on-chain · shared ledger<span>C = keccak256(nonce ‖ details) · cases · outcomes · payments</span></div>
         </div>
       </header>
 
       <section className="guide-section">
-        <h2>The cast</h2>
-        <p className="guide-note">Switch roles with the <b>acting as</b> buttons under the masthead. Everything you may do changes with the role.</p>
+        <h2>Who does what</h2>
+        <p className="guide-note">Switch roles with the <b>acting as</b> buttons under the header. What you can do depends on the role.</p>
         <div className="cast-grid">
           {CAST.map((c) => (
             <div className="cast-card" key={c.label}>
@@ -42,8 +41,11 @@ export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
       </section>
 
       <section className="guide-section">
-        <h2>The happy path — “Mdm Tan”, start to finish</h2>
-        <p className="guide-note">Defaults shown are the local node’s: reward S$ 200 · slash S$ 60 · min stake S$ 500 · dispute window 5 min · signal TTL 2h. The regulator can change all of these in <b>Network parameters</b>.</p>
+        <h2>Walkthrough: stop a scam</h2>
+        <p className="guide-note">
+          Defaults on the local node: reward S$ 200, slash S$ 60, minimum stake S$ 500, dispute window 5 min,
+          signal TTL 2h. The regulator can change all of these in <b>Network parameters</b>.
+        </p>
         <ol className="guide-steps">
           {HAPPY_PATH.map((s, i) => (
             <li key={i}>
@@ -60,34 +62,34 @@ export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
       </section>
 
       <section className="guide-section">
-        <h2>The false alarm — why the stake is real</h2>
-        <p className="guide-note">Same skeleton, different signatures:</p>
+        <h2>Walkthrough: a false alarm</h2>
+        <p className="guide-note">Same steps, opposite votes.</p>
         <ol className="guide-steps">
           <li><span className="step-no alt" aria-hidden="true">1</span>
             <div className="step-body">
               <p className="step-who"><span className="who-tag">telco</span></p>
-              <p>Compose a spammy warning (e.g. <i>“customer on a normal call with their accountant”</i>) and post it as before.</p>
+              <p>Post a spammy warning, for example: "customer on a normal call with their accountant".</p>
             </div>
           </li>
           <li><span className="step-no alt" aria-hidden="true">2</span>
             <div className="step-body">
-              <p className="step-who"><span className="who-tag">bank</span> · <span className="who-tag">confirmer</span></p>
-              <p>Open the case, then both vote the other way:</p>
+              <p className="step-who"><span className="who-tag">bank</span> <span className="who-tag">confirmer</span></p>
+              <p>Open the case. Both vote false alarm.</p>
               <p className="step-click">click <code>Vote false alarm</code> and <code>Second: false alarm</code></p>
             </div>
           </li>
           <li><span className="step-no alt" aria-hidden="true">3</span>
             <div className="step-body">
               <p className="step-who"><span className="who-tag">anyone</span> · after the dispute window</p>
-              <p>Finalize, then settle. The contract slashes <b>S$ 60</b> from the telco’s deposit (credited to the reporting bank’s pool) and the public accuracy drops — e.g. 1 correct of 2 total = 50%.</p>
+              <p>Finalize, then settle. The contract takes S$ 60 from the telco's deposit and credits the reporting bank's pool. The public accuracy drops, for example to 1 of 2.</p>
             </div>
           </li>
         </ol>
       </section>
 
       <section className="guide-section">
-        <h2>Guardrails — what the contract refuses</h2>
-        <p className="guide-note">These are the rules the graders’ checklist asks for. Each one is a Solidity requirement; where you can see it in the dashboard, it’s noted.</p>
+        <h2>Rules the contract enforces</h2>
+        <p className="guide-note">Every rule below is a <code>require</code> in Solidity. Where you can see it in the dashboard, the last column says so.</p>
         <div className="guard-table" role="table" aria-label="Guardrail rules">
           <div className="guard-head" role="row">
             <span role="columnheader">rule</span>
@@ -112,23 +114,22 @@ npm run node
 # terminal 2 — deploy contracts + register the demo members
 npm run deploy:local
 
-# seed the scene: telco stakes S$500, bank funds the pool, “Mdm Tan” signal posted
+# seed the scene: telco stakes S$500, bank funds the pool, "Mdm Tan" signal posted
 npm run seed:local
 
 # terminal 3 — the dashboard
 cd app && npm install && npm run dev   # http://localhost:5173`}</pre>
         <p className="guide-note">
-          <b>Sepolia (read-only):</b> the same nine contracts are live on Sepolia — flip the network toggle to
-          browse them without keys. Writes need a browser wallet, so live demos run on the local node.
+          <b>Sepolia (read-only):</b> the same nine contracts run there. Flip the toggle in the header to browse them.
+          Writes need a wallet, so demos run on the local node.
         </p>
         <aside className="demo-tip">
-          <b>Demo tip — skip the 5-minute wait.</b> Two ways: as the <b>regulator</b>, set the dispute-window
-          field (minutes) in <b>Network parameters</b> to 1 and press <code>Set</code> — the chain reads the
-          window live, so <code>Finalize</code> lights up in 60 seconds. Or time-travel from a Hardhat console
-          attached to the running node:
+          <b>Skip the 5-minute wait.</b> Two ways. As the regulator, set <b>Dispute window</b> to 1 minute and press
+          <code>Set</code>. The contract reads the window at finalize time, so <code>Finalize</code> appears in 60 seconds.
+          Or move chain time from a Hardhat console attached to the node:
           <pre className="guide-pre tight">{`await network.provider.send("evm_increaseTime", [301]);
 await network.provider.send("evm_mine");`}</pre>
-          <span>302 seconds pass instantly and <code>Finalize</code> lights up.</span>
+          <span>This jumps the chain 302 seconds ahead, and <code>Finalize</code> lights up.</span>
         </aside>
       </section>
     </div>
@@ -139,25 +140,25 @@ const CAST = [
   {
     label: "Regulator",
     blurb: "governs members and parameters",
-    does: "Admits providers, banks and confirmers to the permissioned network, and sets the economics — reward, slash, minimum stake, windows.",
+    does: "Adds providers, banks and confirmers to the network. Sets the reward, slash, minimum stake and time windows.",
     clicks: ["Set", "add", "remove"],
   },
   {
     label: "Telco",
     blurb: "provider — stakes and posts signals",
-    does: "Deposits S$ 500, writes the warning in the private channel, and seals it: only the commitment C goes on-chain.",
+    does: "Puts up a S$ 500 deposit, writes the warning in the private channel, and posts its hash.",
     clicks: ["Deposit stake", "Seal & post commitment"],
   },
   {
     label: "Bank",
     blurb: "holds payments, opens cases",
-    does: "Funds the reward pool, holds the risky payment, opens a case on a signal, votes the outcome, finalizes and settles.",
-    clicks: ["Fund pool", "Use this signal", "Vote prevented", "Finalize", "Settle — pay / slash"],
+    does: "Funds the reward pool, holds the payment, opens the case, votes, finalizes and settles.",
+    clicks: ["Fund pool", "Use this signal", "Vote prevented", "Finalize", "Settle"],
   },
   {
     label: "Confirmer",
     blurb: "independent second signature",
-    does: "The second pair of eyes — police, regulator or platform operator. Without their matching vote no case ever settles.",
+    does: "Checks the outcome and signs second. No case settles without a matching vote.",
     clicks: ["Second: prevented", "Second: false alarm", "Dispute"],
   },
 ];
@@ -165,54 +166,54 @@ const CAST = [
 const HAPPY_PATH: { who: string; where?: string; what: string; click?: string; see?: string }[] = [
   {
     who: "telco", where: "Stake vault",
-    what: "Stake the deposit. A provider below the S$ 500 minimum cannot post.",
+    what: "Stake S$ 500. Below the minimum, the contract rejects new warnings.",
     click: "Deposit stake",
-    see: "Staked S$ 500 in the vault panel.",
+    see: "Staked S$ 500 shows in the vault panel.",
   },
   {
     who: "telco", where: "Compose a scam warning",
-    what: "“Mdm Tan is on a 20-minute call with a number linked to a fake government official scam; S$ 40,000 transfer at risk.” Press the button and watch the commitment chip cross the boundary.",
+    what: "Write the warning about Mdm Tan's call. Press the button and watch the commitment chip cross the boundary.",
     click: "Seal & post commitment",
-    see: "The private channel keeps the details; the Signals list on-chain shows only C = 0xc435….",
+    see: "The details stay in the private channel. The chain stores only C = 0xc435….",
   },
   {
     who: "bank", where: "Reward pool",
-    what: "Top up the pool that pays rewards — S$ 200 will leave it per prevented case.",
+    what: "Top up the pool that pays rewards. Each prevented case pays S$ 200 out of it.",
     click: "Fund pool",
-    see: "Pool balance S$ 1,800 after the seeded S$ 2,000 minus the first reward.",
+    see: "Pool balance shows the new total.",
   },
   {
     who: "bank", where: "Signals",
-    what: "Hold Mdm Tan’s payment by opening a case on the signal — one case per (signal, bank, payment ref).",
+    what: "Hold Mdm Tan's payment: open a case on the signal.",
     click: "Use this signal (hold payment, open case)",
-    see: "A case appears with a four-stage stepper: signal used → case open → confirmed ×2 → settle.",
+    see: "A case appears with four stages: signal used, case open, confirmed ×2, settle.",
   },
   {
     who: "bank", where: "Cases",
-    what: "The reporting bank signs the outcome first.",
+    what: "The bank signs the outcome first.",
     click: "Vote prevented",
-    see: "chip: bank voted PREVENTED, confirmer silent.",
+    see: "Chip: bank voted PREVENTED, confirmer silent.",
   },
   {
     who: "confirmer", where: "Cases",
-    what: "The independent confirmer checks and co-signs. Their vote must match the bank’s.",
+    what: "The confirmer checks and signs second. The vote must match the bank's.",
     click: "Second: prevented",
-    see: "chip: confirmed PREVENTED · dispute window counting down.",
+    see: "Chip: confirmed PREVENTED, dispute window counting down.",
   },
   {
-    who: "anyone", where: "Cases, after the dispute window",
-    what: "Once the window closes, anyone can finalize; settlement is one-time and automatic.",
+    who: "anyone", where: "Cases",
+    what: "Wait for the window, then close the case. Settlement happens once and pays automatically.",
     click: "Finalize, then Settle — pay / slash",
-    see: "Ledger: “settled — reward S$ 200 paid”. Telco’s wallet +S$ 200, accuracy 1/1 = 100%.",
+    see: "Ledger: settled, reward S$ 200 paid. Telco accuracy 1 of 1, 100%.",
   },
 ];
 
 const GUARDRAILS = [
-  { rule: "An outsider cannot post signals", by: "ParticipantRegistry", ui: "only registered wallets hold provider keys — the composer only exists for the telco." },
-  { rule: "A provider below minimum stake cannot post", by: "StakeVault.depositStake gate", ui: "Staked value turns red under S$ 500." },
-  { rule: "An expired signal cannot back a case", by: "SignalRegistry / CaseManager expiry checks", ui: "the signal chip flips to “expired” — the red Try-case button lets you trigger the refusal on purpose." },
-  { rule: "One voice is never enough", by: "OutcomeOracle dual confirmation", ui: "settle only appears after two matching votes; a mismatch forces a redo, a dispute resets votes." },
-  { rule: "No case settles twice", by: "RewardPool one-time settle", ui: "the Settle button vanishes once the settled chip shows." },
-  { rule: "No dash with open cases or mid-cooldown", by: "StakeVault withdraw gate", ui: "Withdraw is disabled; amber “cooldown” / red “blocked” chips explain why." },
-  { rule: "Only the regulator governs", by: "AccessControl roles", ui: "Set / add / remove controls render for the regulator persona only." },
+  { rule: "Non-members cannot post signals", by: "ParticipantRegistry", ui: "only registered wallets hold provider keys" },
+  { rule: "A stake below S$ 500 blocks posting", by: "StakeVault", ui: "the Staked value turns red" },
+  { rule: "Expired signals cannot back a case", by: "SignalRegistry, CaseManager", ui: "the chip flips to expired; the red Try-case button shows the refusal" },
+  { rule: "One vote is never enough", by: "OutcomeOracle", ui: "settle needs two matching votes; a dispute resets them" },
+  { rule: "A case settles once", by: "RewardPool", ui: "the settle button disappears after settlement" },
+  { rule: "No early exit from the vault", by: "StakeVault", ui: "withdraw waits out the cooldown and needs zero open cases" },
+  { rule: "Only the regulator governs", by: "AccessControl", ui: "Set, add and remove render for the regulator only" },
 ];

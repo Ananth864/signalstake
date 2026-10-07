@@ -39,15 +39,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 .topbars { position: sticky; top: 0; z-index: 20; }
 .masthead {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px 20px;
-  padding: 18px 24px 12px;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px;
+  padding: 14px 24px 10px;
   border-bottom: 2px solid var(--ink);
   background: var(--paper);
   box-shadow: 0 1px 0 var(--rule);
 }
 .wordmark { font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; }
 .wordmark .stake { color: var(--chain); }
-.tagline { color: var(--ink-soft); font-size: 13px; }
+.tagline {
+  color: var(--ink-soft); font-size: 13px;
+  border-left: 1px solid var(--rule); padding-left: 14px;
+}
 .masthead .spacer { flex: 1; }
 .netchip {
   font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft);
@@ -55,6 +58,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   max-width: 46ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .netchip .dot { color: var(--settle); }
+.netchip .netchip-sep { color: var(--ink-faint); margin: 0 1px; }
 
 .persona-bar {
   display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
@@ -222,13 +226,13 @@ input.w-s { width: 110px; } input.w-m { width: 200px; } textarea { width: 100%; 
 
 /* ---------- view nav + tutorial launch (masthead) ---------- */
 
-.view-nav .seg button { padding: 4px 12px; font-size: 12.5px; }
+.masthead .seg button { padding: 5px 12px; font-size: 12.5px; }
 .tut-launch {
-  font-family: var(--font-mono); font-size: 12px; color: var(--chain);
-  background: var(--panel); border: 1px solid var(--chain); border-radius: 999px;
-  padding: 4px 12px;
+  font-size: 12.5px; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--ink); border-radius: 6px;
+  padding: 5px 13px;
 }
-.tut-launch:hover { background: var(--chain-soft); }
+.tut-launch:hover { background: var(--ink); color: #fff; }
 
 /* ---------- guide page ---------- */
 

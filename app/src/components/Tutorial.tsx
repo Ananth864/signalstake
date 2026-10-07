@@ -10,7 +10,7 @@ import type { PersonaId } from "../lib/chain";
 const STEPS: { title: string; body: ReactNode; persona?: PersonaId; selector?: string }[] = [
   {
     title: "Welcome to the exchange",
-    body: <>SignalStake settles scam warnings with money on the line: telcos stake, banks hold payments, two independent signatures decide, the contract pays or slashes. This tour walks the real UI — you can click along. Make sure <b>local node</b> is selected up top.</>,
+    body: <>SignalStake settles scam warnings with money on the line: telcos stake, banks hold payments, two independent signatures decide, the contract pays or slashes. This tour walks the real UI, and you can click along. Make sure <b>local node</b> is selected up top.</>,
   },
   {
     title: "You are four people",
@@ -20,12 +20,12 @@ const STEPS: { title: string; body: ReactNode; persona?: PersonaId; selector?: s
   {
     title: "Off-chain: the private channel",
     selector: ".lane-offchain",
-    body: <>Above the boundary is the private telco→bank channel. The warning details — the caller story, amounts, payment ref — live here, in this demo stored in your browser only.</>,
+    body: <>Above the boundary is the private telco→bank channel. The warning details, the caller story, amounts and payment ref, live here. In this demo they are stored in your browser only.</>,
   },
   {
     title: "The boundary",
     selector: ".boundary",
-    body: <>The dashed line is the whole privacy story: <b>commitments cross, details never do</b>. What lands on-chain is a fingerprint, C = keccak256(nonce ‖ details) — enough to bind the telco to its words, useless to a scammer.</>,
+    body: <>The dashed line is the privacy story. <b>Commitments cross, details never do.</b> What lands on-chain is a hash of the exact words, enough to hold the telco to them, useless to a scammer.</>,
   },
   {
     title: "On-chain: the shared ledger",
@@ -55,7 +55,7 @@ const STEPS: { title: string; body: ReactNode; persona?: PersonaId; selector?: s
   {
     title: "Two signatures settle it",
     selector: '[data-tut="cases"]',
-    body: <>Bank votes, then the confirmer co-signs — <b>as the confirmer persona</b>, press <code>Second: prevented</code>. Votes must match; a dispute resets them. After the 5-minute dispute window, <code>Finalize</code> then <code>Settle — pay / slash</code> close the case forever.</>,
+    body: <>Bank votes, then the confirmer co-signs. As the confirmer persona, press <code>Second: prevented</code>. Votes must match; a dispute resets them. After the 5-minute dispute window, <code>Finalize</code> then <code>Settle — pay / slash</code> close the case forever.</>,
   },
   {
     title: "The rail: score and receipts",

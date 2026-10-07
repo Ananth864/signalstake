@@ -66,10 +66,12 @@ export default function App() {
 
   const startTutorial = useCallback(() => { setView("dashboard"); setTutStep(0); }, []);
   const gotoView = useCallback((v: View) => { setView(v); if (v === "guide") setTutStep(null); }, []);
+  const netOptions = { localhost: !!deployments.localhost, sepolia: !!deployments.sepolia };
 
   if (view === "guide") {
     return (
-      <Shell status={status} net={net} view={view} onView={gotoView} onRunTutorial={startTutorial}
+      <Shell status={status} net={net} netOptions={netOptions} onNet={setNet}
+        view={view} onView={gotoView} onRunTutorial={startTutorial}
         notice={notice} onDismissNotice={() => setNotice(null)}>
         <GuidePage onRunTutorial={startTutorial} />
       </Shell>
@@ -97,7 +99,7 @@ export default function App() {
     <Shell
       status={status}
       net={net}
-      netOptions={{ localhost: !!deployments.localhost, sepolia: !!deployments.sepolia }}
+      netOptions={netOptions}
       onNet={setNet}
       persona={persona}
       onPersona={setPersona}
@@ -151,8 +153,19 @@ function Shell({
             </span>
           </nav>
           <button className="tut-launch" onClick={onRunTutorial}>run tutorial</button>
-          {net && <span className="netchip"><span className="dot">●</span> {net}</span>}
-          <span className="netchip">{status}</span>
+          {netOptions?.sepolia && netOptions?.localhost && onNet && net && (
+            <span className="seg net-seg" aria-label="Network">
+              <button aria-pressed={net === "localhost"} onClick={() => onNet("localhost")}>local node</button>
+              <button aria-pressed={net === "sepolia"} onClick={() => onNet("sepolia")}>Sepolia (read-only)</button>
+            </span>
+          )}
+          {net && (
+            <span className="netchip">
+              <span className="dot">●</span> {net}
+              <span className="netchip-sep" aria-hidden="true">·</span>
+              {status}
+            </span>
+          )}
         </header>
         {persona && onPersona && (
           <nav className="persona-bar" aria-label="Acting as">
@@ -165,12 +178,6 @@ function Shell({
               ))}
             </span>
             <span className="persona-note">{PERSONAS.find((p) => p.id === persona)?.blurb}</span>
-            {netOptions?.sepolia && netOptions?.localhost && onNet && net && (
-              <span style={{ marginLeft: 24 }} className="seg">
-                <button aria-pressed={net === "localhost"} onClick={() => onNet("localhost")}>local node</button>
-                <button aria-pressed={net === "sepolia"} onClick={() => onNet("sepolia")}>Sepolia (read-only)</button>
-              </span>
-            )}
           </nav>
         )}
         {notice && (
