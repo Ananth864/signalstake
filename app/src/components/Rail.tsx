@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Btn, Chip, KV, Panel } from "./ui";
 import { ledgerEvents } from "../lib/abi";
 import { roleBytes, type RoleName } from "../lib/abi";
-import { sgd, shortAddr, type Clients, type Params, type PersonaId, type Send } from "../lib/chain";
+import { parseSgd, sgd, shortAddr, type Clients, type Params, type PersonaId, type Send } from "../lib/chain";
 import { StakePanel } from "./OffchainLane";
 
 const fmtDur = (s: bigint) => (s >= 86400n ? `${Number(s) / 86400}d` : s >= 3600n ? `${Number(s) / 3600}h` : `${Number(s) / 60}min`);
@@ -18,30 +18,41 @@ export function Rail({
   const bank = clients.deployment.personas.bank;
   const me = persona;
 
-  return (
-    <div>
-      <ParamsPanel clients={clients} persona={persona} send={send} params={params} />
-      <MembersPanel clients={clients} persona={persona} send={send} tick={tick} />
-      {telco && perPersona["telco"] && (
-        <StakePanel clients={clients} persona={me} send={send} stake={perPersona["telco"].stake} openCases={perPersona["telco"].openCases}
-          withdrawRequestAt={perPersona["telco"].withdrawRequestAt} minStake={params.minStake}
-          cooldown={params.withdrawCooldown} sgdBalance={perPersona["telco"].sgd} />
-      )}
-      {telco && perPersona["telco"] && (
-        <Panel title="Provider accuracy" hint="Public score, updated only by settlement.">
-          <KV k="Correct" v={perPersona["telco"].score.correct.toString()} />
-          <KV k="Total" v={perPersona["telco"].score.total.toString()} />
-          <KV k="Accuracy" v={perPersona["telco"].score.total > 0n
-            ? `${Math.round(Number(perPersona["telco"].score.correct * 100n / perPersona["telco"].score.total))}%`
-            : "—"} />
-        </Panel>
-      )}
-      {bank && perPersona["bank"] && (
-        <PoolPanel clients={clients} persona={me} send={send} pool={perPersona["bank"].pool} reward={params.reward} sgdBalance={perPersona["bank"].sgd} />
-      )}
-      <LedgerPanel clients={clients} blockNumber={blockNumber} />
-    </div>
+  const stakePanel = telco && perPersona["telco"] && (
+    <StakePanel clients={clients} persona={me} send={send} stake={perPersona["telco"].stake} openCases={perPersona["telco"].openCases}
+      withdrawRequestAt={perPersona["telco"].withdrawRequestAt} minStake={params.minStake}
+      cooldown={params.withdrawCooldown} sgdBalance={perPersona["telco"].sgd} />
   );
+  const accuracyPanel = telco && perPersona["telco"] && (
+    <Panel title="Provider accuracy" tut="accuracy" hint="Public score, updated only by settlement.">
+      <KV k="Correct" v={perPersona["telco"].score.correct.toString()} />
+      <KV k="Total" v={perPersona["telco"].score.total.toString()} />
+      <KV k="Accuracy" v={perPersona["telco"].score.total > 0n
+        ? `${Math.round(Number(perPersona["telco"].score.correct * 100n / perPersona["telco"].score.total))}%`
+        : "—"} />
+    </Panel>
+  );
+  const poolPanel = bank && perPersona["bank"] && (
+    <PoolPanel clients={clients} persona={me} send={send} pool={perPersona["bank"].pool} reward={params.reward} sgdBalance={perPersona["bank"].sgd} />
+  );
+
+  // The rail leads with what the current persona needs: the regulator governs,
+  // everyone else cares about money and score first.
+  const items: { id: string; el: React.ReactNode }[] = [
+    { id: "params", el: <ParamsPanel clients={clients} persona={persona} send={send} params={params} /> },
+    { id: "members", el: <MembersPanel clients={clients} persona={persona} send={send} tick={tick} /> },
+    ...(stakePanel ? [{ id: "stake", el: stakePanel }] : []),
+    ...(accuracyPanel ? [{ id: "accuracy", el: accuracyPanel }] : []),
+    ...(poolPanel ? [{ id: "pool", el: poolPanel }] : []),
+    { id: "ledger", el: <LedgerPanel clients={clients} blockNumber={blockNumber} /> },
+  ];
+  const lead = me === "regulator" ? [] : ["stake", "accuracy", "pool"];
+  const ordered = [
+    ...items.filter((i) => lead.includes(i.id)),
+    ...items.filter((i) => !lead.includes(i.id)),
+  ];
+
+  return <div data-tut="rail">{ordered.map((i) => <Fragment key={i.id}>{i.el}</Fragment>)}</div>;
 }
 
 function ParamsPanel({ clients, persona, send, params }: { clients: Clients; persona: PersonaId; send: Send; params: Params }) {
@@ -49,13 +60,19 @@ function ParamsPanel({ clients, persona, send, params }: { clients: Clients; per
   const [reward, setReward] = useState(params.reward);
   const [slash, setSlash] = useState(params.slashAmount);
   const [minStake, setMinStake] = useState(params.minStake);
+  const [disputeMin, setDisputeMin] = useState(Math.round(Number(params.disputeWindow) / 60));
+  const [ttlMin, setTtlMin] = useState(Math.round(Number(params.signalTTL) / 60));
   useEffect(() => {
     setReward(params.reward); setSlash(params.slashAmount); setMinStake(params.minStake);
+    setDisputeMin(Math.round(Number(params.disputeWindow) / 60)); setTtlMin(Math.round(Number(params.signalTTL) / 60));
   }, [params]);
   const toSgd = (v: string) => BigInt(v || "0") * 10n ** 18n;
+  const toSecs = (v: number, fallback: bigint) => (Number.isFinite(v) && v > 0 ? BigInt(Math.round(v)) * 60n : fallback);
+  const dirty = reward !== params.reward || slash !== params.slashAmount || minStake !== params.minStake
+    || toSecs(disputeMin, params.disputeWindow) !== params.disputeWindow || toSecs(ttlMin, params.signalTTL) !== params.signalTTL;
 
   return (
-    <Panel title="Network parameters" hint={isRegulator ? "You hold the regulator key. Parameters change only through you." : "Set by the regulator (a multisig in production)."}>
+    <Panel title="Network parameters" tut="params" hint={isRegulator ? "You hold the regulator key. Parameters change only through you — including the windows, live." : "Set by the regulator (a multisig in production)."}>
       <KV k="Reward (PREVENTED)" v={`S$ ${sgd(params.reward)}`} />
       <KV k="Slash (FALSE_ALARM)" v={`S$ ${sgd(params.slashAmount)}`} />
       <KV k="Minimum stake" v={`S$ ${sgd(params.minStake)}`} />
@@ -63,17 +80,22 @@ function ParamsPanel({ clients, persona, send, params }: { clients: Clients; per
       <KV k="Signal TTL" v={fmtDur(params.signalTTL)} />
       <KV k="Withdraw cooldown" v={fmtDur(params.withdrawCooldown)} />
       {isRegulator && (
-        <div className="row" style={{ marginTop: 10 }}>
-          <input className="w-s" type="number" value={Number(reward) / 1e18 || ""} onChange={(e) => setReward(toSgd(e.target.value))} aria-label="Reward SGD" />
-          <input className="w-s" type="number" value={Number(slash) / 1e18 || ""} onChange={(e) => setSlash(toSgd(e.target.value))} aria-label="Slash SGD" />
-          <input className="w-s" type="number" value={Number(minStake) / 1e18 || ""} onChange={(e) => setMinStake(toSgd(e.target.value))} aria-label="Min stake SGD" />
-          <Btn variant="ghost" small disabled={reward === params.reward && slash === params.slashAmount && minStake === params.minStake}
-            onClick={() => send("regulator", "Settings", "setParams",
-              [{ reward, slashAmount: slash, minStake, disputeWindow: params.disputeWindow, signalTTL: params.signalTTL, withdrawCooldown: params.withdrawCooldown }],
-              "Update parameters")}>
-            Set
-          </Btn>
-        </div>
+        <>
+          <div className="row" style={{ marginTop: 10 }}>
+            <input className="w-s" type="number" value={Number(reward) / 1e18 || ""} onChange={(e) => setReward(toSgd(e.target.value))} aria-label="Reward SGD" />
+            <input className="w-s" type="number" value={Number(slash) / 1e18 || ""} onChange={(e) => setSlash(toSgd(e.target.value))} aria-label="Slash SGD" />
+            <input className="w-s" type="number" value={Number(minStake) / 1e18 || ""} onChange={(e) => setMinStake(toSgd(e.target.value))} aria-label="Min stake SGD" />
+            <input className="w-s" type="number" value={disputeMin} onChange={(e) => setDisputeMin(Number(e.target.value))} aria-label="Dispute window minutes" />
+            <input className="w-s" type="number" value={ttlMin} onChange={(e) => setTtlMin(Number(e.target.value))} aria-label="Signal TTL minutes" />
+            <Btn variant="ghost" small disabled={!dirty}
+              onClick={() => send("regulator", "Settings", "setParams",
+                [{ reward, slashAmount: slash, minStake, disputeWindow: toSecs(disputeMin, params.disputeWindow), signalTTL: toSecs(ttlMin, params.signalTTL), withdrawCooldown: params.withdrawCooldown }],
+                "Update parameters")}>
+              Set
+            </Btn>
+          </div>
+          <p className="hint">the two right-most fields are minutes — shrink the dispute window live to skip the wait</p>
+        </>
       )}
     </Panel>
   );
@@ -113,14 +135,17 @@ function MembersPanel({ clients, persona, send, tick }: { clients: Clients; pers
   }, [clients, tick]);
 
   return (
-    <Panel title="Members" hint="A permissioned network: only the regulator approves participants.">
+    <Panel title="Members" tut="members" hint="A permissioned network: only the regulator approves participants.">
       {members.map((m) => (
         <div className="row" key={m.addr}>
           <Chip kind={m.role === "REGULATOR" ? "chain" : undefined}>{m.role}</Chip>
           <span className="mono muted">{shortAddr(m.addr as `0x${string}`)}</span>
           {isRegulator && m.role !== "REGULATOR" && (
             <Btn variant="ghost" small style={{ marginLeft: "auto" }}
-              onClick={() => send("regulator", "ParticipantRegistry", "removeMember", [m.addr], `Remove ${m.role}`)}>
+              onClick={() => {
+                if (!window.confirm(`Remove this ${m.role} from the network?`)) return;
+                send("regulator", "ParticipantRegistry", "removeMember", [m.addr], `Remove ${m.role}`);
+              }}>
               remove
             </Btn>
           )}
@@ -136,6 +161,7 @@ function MembersPanel({ clients, persona, send, tick }: { clients: Clients; pers
           </select>
           <Btn variant="ghost" small disabled={!addr.startsWith("0x") || addr.length !== 42}
             onClick={async () => {
+              if (!window.confirm(`Add ${addr} as ${role.replace("_ROLE", "")}?`)) return;
               await send("regulator", "ParticipantRegistry", "addMember", [addr, roleBytes(role)], `Add ${role.replace("_ROLE", "")}`);
               setAddr("");
             }}>add</Btn>
@@ -150,18 +176,19 @@ function PoolPanel({ clients, persona, send, pool, reward, sgdBalance }: {
 }) {
   const isBank = persona === "bank";
   const [amount, setAmount] = useState("1000");
+  const amountWei = parseSgd(amount);
   return (
-    <Panel title="Reward pool" extra={<span>bank</span>} hint="Rewards are paid from the bank's own funded pool.">
+    <Panel title="Reward pool" tut="pool" extra={<span>bank</span>} hint="Rewards are paid from the bank's own funded pool.">
       <KV k="Pool balance" v={`S$ ${sgd(pool)}`} vClass={pool >= reward ? "" : "alert"} />
       <KV k="Reward per case" v={`S$ ${sgd(reward)}`} />
       <KV k="Bank wallet" v={`S$ ${sgd(sgdBalance)}`} />
       {isBank && (
         <div className="row" style={{ marginTop: 10 }}>
           <input className="w-s" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} aria-label="Fund amount SGD" />
-          <Btn small variant="chain" onClick={async () => {
-            const amt = BigInt(amount) * 10n ** 18n;
-            await send("bank", "MockSGD", "approve", [clients.deployment.contracts.RewardPool, amt], "Approve SGD");
-            await send("bank", "RewardPool", "fundPool", [amt], `Fund pool S$${amount}`);
+          <Btn small variant="chain" disabled={amountWei === 0n} onClick={async () => {
+            const ok = await send("bank", "MockSGD", "approve", [clients.deployment.contracts.RewardPool, amountWei], "Approve SGD");
+            if (!ok) return;
+            await send("bank", "RewardPool", "fundPool", [amountWei], `Fund pool S$${amount}`);
           }}>Fund pool</Btn>
         </div>
       )}
@@ -183,7 +210,7 @@ function LedgerPanel({ clients, blockNumber }: { clients: Clients; blockNumber: 
           const logs = await clients.publicClient.getLogs({ address, event: le.event, fromBlock: from });
           for (const log of logs) {
             const a = log.args as Record<string, unknown>;
-            let text = `${le.event.name.replace(/^(SignalPosted|CaseOpened|OutcomeConfirmed|CaseFinalized|CaseSettledPrevented|CaseSettledFalseAlarm|Staked|Slashed|PoolFunded|MemberAdded|ParamsSet)$/, (m) => m)}`;
+            let text: string = le.event.name;
             const n = (v: unknown) => (typeof v === "bigint" ? v.toString() : "");
             switch (le.event.name) {
               case "SignalPosted": text = `signal #${n(a.signalId)} committed by ${shortAddr(a.provider as `0x${string}`)}`; break;
@@ -209,7 +236,7 @@ function LedgerPanel({ clients, blockNumber }: { clients: Clients; blockNumber: 
   }, [clients, blockNumber]);
 
   return (
-    <Panel title="Ledger" hint="Every state change on the shared ledger, newest first.">
+    <Panel title="Ledger" tut="ledger" hint="Every state change on the shared ledger, newest first.">
       {rows.length === 0 && <div className="empty">No events yet.</div>}
       {rows.map((r) => (
         <div className="ledger-row" key={r.key}>

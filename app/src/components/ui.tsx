@@ -1,8 +1,8 @@
 import { type ReactNode } from "react";
 
-export function Panel({ title, hint, children, extra }: { title: string; hint?: string; children: ReactNode; extra?: ReactNode }) {
+export function Panel({ title, hint, children, extra, tut }: { title: string; hint?: string; children: ReactNode; extra?: ReactNode; tut?: string }) {
   return (
-    <section className="panel">
+    <section className="panel" data-tut={tut}>
       <h3 style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         {title}
         <span style={{ marginLeft: "auto", fontWeight: 400, fontSize: 12, color: "var(--ink-faint)" }}>{extra}</span>

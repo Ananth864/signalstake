@@ -187,18 +187,29 @@ export async function readAll(c: Clients) {
 
 // ---------- writing ----------
 
-export type Send = (persona: PersonaId, contract: keyof Deployment["contracts"], fn: string, args: unknown[], label: string) => Promise<void>;
+export type Send = (persona: PersonaId, contract: keyof Deployment["contracts"], fn: string, args: unknown[], label: string) => Promise<boolean>;
 
-export function makeSend(c: Clients, onStatus: (s: string) => void, onDone: () => void): Send {
+// viem wraps reverts in multi-line boilerplate; pull out the actual reason.
+function revertReason(e: unknown): string {
+  if (e instanceof Error) {
+    const base = (e as { shortMessage?: string }).shortMessage ?? e.message;
+    const m = base.match(/execution reverted:?\s*([^"]+)/);
+    const text = m ? m[1] : base;
+    return text.replace(/\s+/g, " ").trim().slice(0, 160) || "unknown error";
+  }
+  return String(e).slice(0, 160);
+}
+
+export function makeSend(c: Clients, onNotice: (n: { kind: "busy" | "ok" | "err"; text: string }) => void, onDone: () => void): Send {
   return async (persona, contractKey, fn, args, label) => {
     const wallet = c.walletFor(persona);
-    if (!wallet) { onStatus(`${label}: read-only on this network`); return; }
+    if (!wallet) { onNotice({ kind: "err", text: `${label}: read-only on this network` }); return false; }
     const abi = {
       MockSGD: mockSgdAbi, ParticipantRegistry: registryAbi, Settings: settingsAbi, StakeVault: stakeVaultAbi,
       SignalRegistry: signalRegistryAbi, CaseManager: caseManagerAbi, OutcomeOracle: outcomeOracleAbi,
       RewardPool: rewardPoolAbi, Reputation: reputationAbi,
     }[contractKey]!;
-    onStatus(`${label} — signing…`);
+    onNotice({ kind: "busy", text: `${label} — signing…` });
     try {
       const hash = await wallet.writeContract({
         address: c.deployment.contracts[contractKey],
@@ -206,13 +217,14 @@ export function makeSend(c: Clients, onStatus: (s: string) => void, onDone: () =
         functionName: fn,
         args,
       } as never);
-      onStatus(`${label} — mined in ${hash.slice(0, 10)}…`);
+      onNotice({ kind: "busy", text: `${label} — mined ${hash.slice(0, 10)}…` });
       await c.publicClient.waitForTransactionReceipt({ hash });
-      onStatus(`${label} — confirmed.`);
+      onNotice({ kind: "ok", text: `${label} — confirmed.` });
       onDone();
+      return true;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message.slice(0, 220) : String(e);
-      onStatus(`${label} — rejected: ${msg}`);
+      onNotice({ kind: "err", text: `${label} — refused: ${revertReason(e)}` });
+      return false;
     }
   };
 }
@@ -224,6 +236,23 @@ export const sgd = (v: bigint) =>
 
 export const shortHash = (h: `0x${string}`) => `${h.slice(0, 8)}…${h.slice(-6)}`;
 export const shortAddr = (a: Address) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+
+// Hardhat only stamps a new block when one is mined, so after a long idle
+// spell the latest block lags the wall clock by hours and expiries computed
+// from it land in the past. Take the later of the two; a time-travelled
+// chain (evm_increaseTime) keeps its larger, travelled timestamp.
+export function chainNow(blockTs: bigint): bigint {
+  const real = BigInt(Math.floor(Date.now() / 1000));
+  return real > blockTs ? real : blockTs;
+}
+
+// Whole-SGD input → wei; 0n for anything empty, negative or not a whole number,
+// so a mistyped field disables the button instead of throwing in the handler.
+export function parseSgd(v: string): bigint {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) return 0n;
+  return BigInt(n) * 10n ** 18n;
+}
 
 export function commitmentOf(nonce: `0x${string}`, details: string): `0x${string}` {
   return keccak256(toBytes(nonce + details));

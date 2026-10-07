@@ -4,7 +4,7 @@
   --panel-alt: #eef1f4;
   --ink: #16202b;
   --ink-soft: #4c5b6a;
-  --ink-faint: #8595a5;
+  --ink-faint: #64748b;
   --rule: #d4dbe2;
   --alert: #c8102e;
   --alert-soft: #fbe9ec;
@@ -52,6 +52,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .netchip {
   font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft);
   border: 1px solid var(--rule); border-radius: 999px; padding: 3px 10px; background: var(--panel);
+  max-width: 46ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .netchip .dot { color: var(--settle); }
 
@@ -68,10 +69,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .seg button:last-child { border-right: 0; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; font-weight: 600; }
 .persona-note { font-size: 12px; color: var(--ink-faint); font-style: italic; }
-.statusline {
-  margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft);
-  max-width: 46ch; text-align: right;
+/* ---------- transaction notice strip ---------- */
+
+.notice {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 7px 24px; font-family: var(--font-mono); font-size: 12.5px;
+  border-bottom: 1px solid var(--rule);
 }
+.notice.busy { background: var(--chain-soft); color: var(--chain); }
+.notice.ok { background: var(--settle-soft); color: var(--settle); }
+.notice.err { background: var(--alert-soft); color: var(--alert); font-weight: 600; }
+.notice-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.notice-close {
+  border: 0; background: transparent; color: inherit; font-size: 15px; line-height: 1;
+  padding: 0 4px; border-radius: 4px; opacity: 0.7;
+}
+.notice-close:hover { opacity: 1; }
 
 /* ---------- layout ---------- */
 
@@ -206,3 +219,142 @@ input.w-s { width: 110px; } input.w-m { width: 200px; } textarea { width: 100%; 
 @media (prefers-reduced-motion: reduce) {
   .crossing, .ledger-row { animation: none; }
 }
+
+/* ---------- view nav + tutorial launch (masthead) ---------- */
+
+.view-nav .seg button { padding: 4px 12px; font-size: 12.5px; }
+.tut-launch {
+  font-family: var(--font-mono); font-size: 12px; color: var(--chain);
+  background: var(--panel); border: 1px solid var(--chain); border-radius: 999px;
+  padding: 4px 12px;
+}
+.tut-launch:hover { background: var(--chain-soft); }
+
+/* ---------- guide page ---------- */
+
+.guide { max-width: 900px; margin: 0 auto; padding: 34px 24px 90px; }
+.guide-eyebrow {
+  font-family: var(--font-mono); font-size: 11.5px; text-transform: uppercase;
+  letter-spacing: 0.14em; color: var(--chain); margin: 0;
+}
+.guide-hero h1 {
+  font-family: var(--font-display); font-size: 40px; font-weight: 700;
+  letter-spacing: -0.01em; margin: 6px 0 10px;
+}
+.guide-lede { font-size: 16px; color: var(--ink-soft); max-width: 62ch; margin: 0 0 18px; }
+.guide-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 22px; }
+
+.mini-lanes { border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.mini-lanes > div { padding: 10px 16px; font-family: var(--font-mono); font-size: 12px; }
+.mini-lanes > div span {
+  display: block; text-transform: none; letter-spacing: 0;
+  color: var(--ink-faint); font-size: 11.5px; margin-top: 2px;
+}
+.mini-off { background: var(--panel-alt); color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+.mini-boundary {
+  border-top: 2px dashed var(--chain); border-bottom: 2px dashed var(--chain);
+  color: var(--chain); background: var(--chain-soft); text-align: center; font-size: 11.5px;
+}
+.mini-on { background: var(--panel); color: var(--chain); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.guide-section { margin-top: 44px; }
+.guide-section h2 {
+  font-family: var(--font-display); font-size: 24px; font-weight: 700;
+  margin: 0 0 6px; padding-top: 16px; border-top: 2px solid var(--ink);
+}
+.guide-note { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 16px; max-width: 72ch; }
+.guide code {
+  font-family: var(--font-mono); font-size: 11.5px; background: var(--panel-alt);
+  border: 1px solid var(--rule); border-bottom: 2px solid var(--ink); border-radius: 4px;
+  padding: 1px 6px; white-space: nowrap;
+}
+
+.cast-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.cast-card {
+  background: var(--panel); border: 1px solid var(--rule); border-top: 3px solid var(--ink);
+  border-radius: 10px; padding: 14px 16px;
+}
+.cast-card h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 17px; }
+.cast-blurb { margin: 0 0 8px; font-size: 12px; color: var(--ink-faint); font-style: italic; }
+.cast-does { margin: 0 0 10px; font-size: 13px; color: var(--ink-soft); }
+.cast-clicks { margin: 0; font-size: 12px; color: var(--ink-faint); display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+
+.guide-steps { list-style: none; margin: 0; padding: 0; }
+.guide-steps li { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px dashed var(--rule); }
+.guide-steps li:last-child { border-bottom: 0; }
+.step-no {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+  border: 1.5px solid var(--chain); color: var(--chain); background: var(--panel);
+  font-family: var(--font-mono); font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
+.step-no.alt { border-color: var(--alert); color: var(--alert); }
+.step-body { min-width: 0; }
+.step-body p { margin: 0 0 6px; max-width: 68ch; }
+.step-who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.who-tag {
+  font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: 0.1em; background: var(--ink); color: var(--paper);
+  border-radius: 3px; padding: 2px 7px;
+}
+.where { color: var(--ink-faint); }
+.step-see { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--ink-soft); }
+
+.guard-table { border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.guard-head, .guard-row { display: grid; grid-template-columns: 1.2fr 0.9fr 1.4fr; gap: 12px; padding: 9px 14px; }
+.guard-head {
+  background: var(--panel-alt); font-family: var(--font-mono); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft);
+}
+.guard-row { border-top: 1px dashed var(--rule); font-size: 13px; }
+.guard-row .mono { font-size: 11.5px; color: var(--chain); }
+
+.guide-pre {
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7;
+  background: var(--ink); color: #e8eef4; border-radius: 10px;
+  padding: 16px 18px; overflow-x: auto; margin: 0 0 14px;
+}
+.guide-pre.tight { padding: 10px 12px; margin: 8px 0; }
+.demo-tip {
+  margin-top: 18px; border: 1px dashed var(--amber); background: var(--amber-soft);
+  border-radius: 10px; padding: 14px 16px; font-size: 13px; color: var(--ink-soft);
+}
+.demo-tip b { color: var(--amber); }
+
+@media (max-width: 720px) {
+  .guide { padding: 24px 16px 70px; }
+  .guide-hero h1 { font-size: 30px; }
+  .guard-head, .guard-row { grid-template-columns: 1fr; gap: 4px; }
+  .guard-head { display: none; }
+}
+
+/* ---------- interactive tutorial ---------- */
+
+.tutorial-card {
+  position: fixed; right: 22px; bottom: 22px; width: min(400px, calc(100vw - 44px));
+  background: var(--panel); border: 1px solid var(--rule); border-top: 3px solid var(--chain);
+  border-radius: 10px; padding: 14px 16px 12px; z-index: 60;
+  box-shadow: 0 14px 34px rgba(22, 32, 43, 0.22);
+}
+.tut-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.tut-count { font-family: var(--font-mono); font-size: 11px; color: var(--chain); letter-spacing: 0.08em; }
+.tut-persona { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); }
+.tut-close {
+  margin-left: auto; border: 0; background: transparent; color: var(--ink-faint);
+  font-size: 18px; line-height: 1; padding: 2px 8px; border-radius: 4px;
+}
+.tut-close:hover { color: var(--ink); background: var(--panel-alt); }
+.tutorial-card h4 { font-family: var(--font-display); font-size: 18px; margin: 0 0 6px; }
+.tut-body { font-size: 13px; color: var(--ink-soft); }
+.tut-body code {
+  font-family: var(--font-mono); font-size: 11.5px; background: var(--panel-alt);
+  border: 1px solid var(--rule); border-radius: 4px; padding: 0 5px; white-space: nowrap;
+}
+.tut-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.tut-keys { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-faint); }
+.tutorial-spot {
+  outline: 3px solid var(--chain); outline-offset: 3px; border-radius: 10px;
+  box-shadow: 0 0 0 6px var(--chain-soft); scroll-margin-top: 120px;
+}
+@media (max-width: 720px) { .tutorial-card { right: 12px; bottom: 12px; } }
+@media (prefers-reduced-motion: reduce) { .tutorial-spot { transition: none; } }

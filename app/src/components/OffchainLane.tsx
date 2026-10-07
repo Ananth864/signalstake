@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Btn, Chip, KV, Panel } from "./ui";
-import { commitmentOf, randomNonce, sgd, shortHash, type Clients, type PersonaId, type Params, type Send, type SignalRec } from "../lib/chain";
+import { chainNow, commitmentOf, parseSgd, randomNonce, sgd, shortHash, type Clients, type PersonaId, type Params, type Send, type SignalRec } from "../lib/chain";
 import { channelAdd, channelList, type ChannelEntry } from "../lib/offchain";
 
 /**
@@ -40,17 +40,18 @@ function Composer({
 
   const details = JSON.stringify({ scenario: "live", risk, transferAmount: `S$${Number(amount).toLocaleString("en-SG")}`, paymentRef });
   const commit = commitmentOf(nonce, details);
-  const expiry = blockTimestamp + params.signalTTL;
+  const expiry = chainNow(blockTimestamp) + params.signalTTL;
 
   const post = async () => {
     setCrossing(true);
-    await send("telco", "SignalRegistry", "postSignal", [commit, typeIdx, expiry], "Post signal");
+    const ok = await send("telco", "SignalRegistry", "postSignal", [commit, typeIdx, expiry], "Post signal");
+    if (!ok) { setCrossing(false); return; }
     channelAdd({ commitHash: commit, nonce, details, postedAt: Date.now() });
     setTimeout(() => setCrossing(false), 1300);
   };
 
   return (
-    <Panel title="Compose a scam warning" hint="You are the telco. The details stay in the private channel; only the commitment below goes on-chain.">
+    <Panel title="Compose a scam warning" tut="composer" hint="You are the telco. The details stay in the private channel; only the commitment below goes on-chain.">
       <div className="row"><label>Type</label>
         <select value={typeIdx} onChange={(e) => setTypeIdx(Number(e.target.value))}>
           <option value={0}>Scam call</option><option value={1}>Scam SMS</option><option value={2}>Scam site</option>
@@ -80,7 +81,7 @@ function ChannelPanel({ signals }: { signals: SignalRec[] }) {
   const entries = channelList();
   const onChain = new Set(signals.map((s) => s.commitHash.toLowerCase()));
   return (
-    <Panel title="Private channel" hint="Warning details shared telco→bank. The bank sees these; the ledger never does.">
+    <Panel title="Private channel" tut="channel" hint="Warning details shared telco→bank. The bank sees these; the ledger never does.">
       {entries.length === 0 && <div className="empty">No warnings shared yet. <b>The telco posts one to start the flow.</b></div>}
       {entries.map((e: ChannelEntry) => {
         let parsed: Record<string, string> = {};
@@ -117,8 +118,9 @@ export function StakePanel({
   const isTelco = persona === "telco";
   const now = BigInt(Math.floor(Date.now() / 1000));
   const cooldownLeft = withdrawRequestAt > 0n ? Number(withdrawRequestAt + cooldown - now) : 0;
+  const amountWei = parseSgd(amount);
   return (
-    <Panel title="Stake vault" extra={<span>telco</span>}
+    <Panel title="Stake vault" tut="stake-vault" extra={<span>telco</span>}
       hint={isTelco ? "Your deposit backs every signal. Below min stake you cannot post." : "The telco's deposit. Below min stake it cannot post."}>
       <KV k="Staked" v={`S$ ${sgd(stake)}`} vClass={stake >= minStake ? "" : "alert"} />
       <KV k="Minimum" v={`S$ ${sgd(minStake)}`} />
@@ -128,10 +130,9 @@ export function StakePanel({
         <>
           <div className="row" style={{ marginTop: 10 }}>
             <input className="w-s" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} aria-label="Stake amount (SGD)" />
-            <Btn variant="chain" small onClick={async () => {
-              const amt = BigInt(amount) * 10n ** 18n;
-              await send("telco", "MockSGD", "approve", [clients.deployment.contracts.StakeVault, amt], "Approve SGD");
-              await send("telco", "StakeVault", "depositStake", [amt], `Stake S$${amount}`);
+            <Btn variant="chain" small disabled={amountWei === 0n} onClick={async () => {
+              await send("telco", "MockSGD", "approve", [clients.deployment.contracts.StakeVault, amountWei], "Approve SGD");
+              await send("telco", "StakeVault", "depositStake", [amountWei], `Stake S$${amount}`);
             }}>
               Deposit stake
             </Btn>

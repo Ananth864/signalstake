@@ -20,6 +20,8 @@ cd app && npm install && npm run dev   # terminal 3 — dashboard at http://loca
 In the dashboard, switch personas (top bar) and run the story:
 **Telco** composes a warning (details stay off-chain; only `C = keccak256(nonce ‖ details)` is posted) → **Bank** opens a case on a live signal and votes → **Confirmer** seconds the outcome → after the 5-minute dispute window anyone finalizes and settles → the telco is paid / slashed and the accuracy score updates.
 
+New to the app? The masthead has a **guide** view — a full written walkthrough of the cast, the happy path, the false alarm and the guardrails — and a **run tutorial** button that steps through the live dashboard in 12 short steps (it switches personas for you and spotlights each panel). The regulator can also shrink the dispute window live in *Network parameters* (window fields are minutes; the contracts read them at call time), which is the quickest way to skip the wait during a recording.
+
 Fast-forward time on the local chain (what the video demo does instead of waiting):
 
 ```bash

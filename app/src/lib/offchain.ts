@@ -9,6 +9,9 @@ export type ChannelEntry = {
 };
 
 const KEY = "signalstake-channel-v1";
+// Commit hashes written by the last seed load; lets a re-seed evict the
+// previous deployment's entries (its nonce — and commitment — changes).
+const SEED_KEY = "signalstake-seeded-v1";
 
 function load(): Record<string, ChannelEntry> {
   try {
@@ -28,13 +31,20 @@ export function channelInit() {
     .then((seed: { signals: ChannelEntry[] } | null) => {
       if (!seed) return;
       const store = load();
+      const fresh = new Set(seed.signals.map((s) => s.commitHash));
+      let prev: string[] = [];
+      try { prev = JSON.parse(localStorage.getItem(SEED_KEY) || "[]"); } catch { /* first run */ }
       let changed = false;
+      for (const h of prev) {
+        if (!fresh.has(h as `0x${string}`) && store[h]) { delete store[h]; changed = true; }
+      }
       for (const s of seed.signals) {
         if (!store[s.commitHash]) {
           store[s.commitHash] = { ...s, postedAt: s.postedAt ?? 0 };
           changed = true;
         }
       }
+      localStorage.setItem(SEED_KEY, JSON.stringify([...fresh]));
       if (changed) save(store);
     })
     .catch(() => {});

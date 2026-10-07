@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { keccak256, toBytes } from "viem";
 import { Btn, Chip, KV, Panel } from "./ui";
-import { OUTCOME_LABEL, SIGNAL_TYPES, sgd, shortAddr, shortHash,
+import { OUTCOME_LABEL, SIGNAL_TYPES, chainNow, parseSgd, sgd, shortAddr, shortHash,
   type CaseRec, type Clients, type OracleState, type Params, type PersonaId, type Send, type SignalRec,
 } from "../lib/chain";
 import { channelByCommit } from "../lib/offchain";
@@ -42,14 +42,19 @@ function SignalsPanel({
   const [ref, setRef] = useState("XFER-88123");
   const [amount, setAmount] = useState("40000");
   const isBank = persona === "bank";
+  const amountWei = parseSgd(amount);
 
   return (
-    <Panel title="Signals" hint="Commitments posted by providers. No personal data — just fingerprints.">
+    <Panel title="Signals" tut="signals" hint="Commitments posted by providers. No personal data — just fingerprints.">
       {signals.length === 0 && <div className="empty">No signals yet. <b>The telco seals a warning to begin.</b></div>}
       {signals.map((s) => {
-        const left = Number(s.expiry - blockTimestamp);
+        const left = Number(s.expiry - chainNow(blockTimestamp));
         const expired = left <= 0;
         const channelEntry = channelByCommit(s.commitHash);
+        const seedRef = (): string => {
+          if (!channelEntry) return ref;
+          try { return JSON.parse(channelEntry.details).paymentRef ?? ref; } catch { return ref; }
+        };
         return (
           <div className="rec" key={s.id}>
             <div className="rec-top">
@@ -61,16 +66,16 @@ function SignalsPanel({
                 : <Chip kind={left < 300 ? "amber" : undefined}>live {left >= 3600 ? `${Math.floor(left / 3600)}h ${Math.floor((left % 3600) / 60)}m` : `${Math.floor(left / 60)}m ${left % 60}s`}</Chip>}
               <span className="mono muted" style={{ marginLeft: "auto" }}>{shortAddr(s.provider)}</span>
             </div>
-            {isBank && !expired && (
+            {isBank && (
               openFor === Number(s.id) ? (
                 <div className="row">
-                  <input className="w-m" type="text" value={channelEntry ? (JSON.parse(channelEntry.details).paymentRef ?? ref) : ref}
+                  <input className="w-m" type="text" value={ref}
                     onChange={(e) => setRef(e.target.value)} aria-label="Payment reference" />
                   <input className="w-s" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} aria-label="Amount at risk" />
-                  <Btn variant="chain" small
+                  <Btn variant="chain" small disabled={amountWei === 0n}
                     onClick={async () => {
-                      await send("bank", "CaseManager", "openCase", [s.id, keccak256(toBytes(ref)), BigInt(amount) * 10n ** 18n], `Open case on signal #${s.id}`);
-                      setOpenFor(null);
+                      const ok = await send("bank", "CaseManager", "openCase", [s.id, keccak256(toBytes(ref)), amountWei], `Open case on signal #${s.id}`);
+                      if (ok) setOpenFor(null);
                     }}>
                     Open case
                   </Btn>
@@ -78,7 +83,18 @@ function SignalsPanel({
                 </div>
               ) : (
                 <div className="row">
-                  <Btn variant="ghost" small onClick={() => setOpenFor(Number(s.id))}>Use this signal (hold payment, open case)</Btn>
+                  {!expired && (
+                    <Btn variant="ghost" small onClick={() => { setRef(seedRef()); setOpenFor(Number(s.id)); }}>Use this signal (hold payment, open case)</Btn>
+                  )}
+                  {expired && (
+                    <>
+                      <Btn variant="alert" small
+                        onClick={() => send("bank", "CaseManager", "openCase", [s.id, keccak256(toBytes(ref)), BigInt(amount) * 10n ** 18n], `Open case on expired signal #${s.id}`)}>
+                        Try case on expired signal
+                      </Btn>
+                      <span className="hint" style={{ alignSelf: "center" }}>the chain must refuse — that refusal is the demo</span>
+                    </>
+                  )}
                 </div>
               )
             )}
@@ -100,12 +116,12 @@ function CasesPanel({
   const isTelco = persona === "telco";
 
   return (
-    <Panel title="Cases" hint="A case records that a bank used a signal on a held payment. Bank + confirmer both sign the outcome; the contract settles.">
+    <Panel title="Cases" tut="cases" hint="A case records that a bank used a signal on a held payment. Bank + confirmer both sign the outcome; the contract settles.">
       {cases.length === 0 && <div className="empty">No cases yet. <b>The bank opens one from a live signal.</b></div>}
       {cases.map((c, i) => {
         const st = oracleStates[i];
         const stage = c.settled ? 4 : st.status === 2 ? 3 : st.status === 1 ? 3 : 2;
-        const finalizeIn = st.status === 1 ? Number(st.confirmedAt + params.disputeWindow - blockTimestamp) : 0;
+        const finalizeIn = st.status === 1 ? Number(st.confirmedAt + params.disputeWindow - chainNow(blockTimestamp)) : 0;
         const canFinalize = st.status === 1 && finalizeIn <= 0;
         const myCase = personaAddr && c.bank.toLowerCase() === personaAddr.toLowerCase();
         const myProvider = personaAddr && c.provider.toLowerCase() === personaAddr.toLowerCase();

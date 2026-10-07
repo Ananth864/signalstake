@@ -7,15 +7,21 @@ import { channelInit } from "./lib/offchain";
 import { OffchainLane } from "./components/OffchainLane";
 import { OnchainLane } from "./components/OnchainLane";
 import { Rail } from "./components/Rail";
+import { GuidePage } from "./components/GuidePage";
+import { Tutorial } from "./components/Tutorial";
 
 type Net = "localhost" | "sepolia";
+type View = "dashboard" | "guide";
 
 export default function App() {
   const [deployments, setDeployments] = useState<{ localhost?: Deployment; sepolia?: Deployment }>({});
   const [net, setNet] = useState<Net>("localhost");
+  const [view, setView] = useState<View>("dashboard");
+  const [tutStep, setTutStep] = useState<number | null>(null);
   const [persona, setPersona] = useState<PersonaId>("regulator");
   const [tick, setTick] = useState(0);
   const [status, setStatus] = useState("starting…");
+  const [notice, setNotice] = useState<{ kind: "busy" | "ok" | "err"; text: string } | null>(null);
   const [data, setData] = useState<Awaited<ReturnType<typeof readAll>> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,9 +34,16 @@ export default function App() {
 
   const bump = useCallback(() => setTick((t) => t + 1), []);
   const send = useMemo(
-    () => (clients ? makeSend(clients, setStatus, bump) : null),
+    () => (clients ? makeSend(clients, setNotice, bump) : null),
     [clients, bump]
   );
+
+  // Transaction outcomes stay on screen; only good news auto-clears.
+  useEffect(() => {
+    if (!notice || notice.kind === "err") return;
+    const t = setTimeout(() => setNotice(null), 8000);
+    return () => clearTimeout(t);
+  }, [notice]);
 
   // Poll chain state every 3 seconds.
   useEffect(() => {
@@ -51,11 +64,33 @@ export default function App() {
     return () => { alive = false; clearTimeout(timer); };
   }, [clients, tick]);
 
+  const startTutorial = useCallback(() => { setView("dashboard"); setTutStep(0); }, []);
+  const gotoView = useCallback((v: View) => { setView(v); if (v === "guide") setTutStep(null); }, []);
+
+  if (view === "guide") {
+    return (
+      <Shell status={status} net={net} view={view} onView={gotoView} onRunTutorial={startTutorial}
+        notice={notice} onDismissNotice={() => setNotice(null)}>
+        <GuidePage onRunTutorial={startTutorial} />
+      </Shell>
+    );
+  }
+
   if (!deployments.localhost && !deployments.sepolia) {
-    return <Shell status="no deployment found"><EmptyDeployment /></Shell>;
+    return (
+      <Shell status="no deployment found" net={net} view={view} onView={gotoView} onRunTutorial={startTutorial}
+        notice={notice} onDismissNotice={() => setNotice(null)}>
+        <EmptyDeployment />
+      </Shell>
+    );
   }
   if (!clients || !data || !send) {
-    return <Shell status={status}>{error ? <div className="empty">Cannot reach {net}: <span className="mono">{error}</span></div> : <div className="empty">connecting to {net}…</div>}</Shell>;
+    return (
+      <Shell status={status} net={net} view={view} onView={gotoView} onRunTutorial={startTutorial}
+        notice={notice} onDismissNotice={() => setNotice(null)}>
+        {error ? <div className="empty">Cannot reach {net}: <span className="mono">{error}</span></div> : <div className="empty">connecting to {net}…</div>}
+      </Shell>
+    );
   }
 
   return (
@@ -66,6 +101,11 @@ export default function App() {
       onNet={setNet}
       persona={persona}
       onPersona={setPersona}
+      view={view}
+      onView={gotoView}
+      onRunTutorial={startTutorial}
+      notice={notice}
+      onDismissNotice={() => setNotice(null)}
     >
       <div className="board">
         <div>
@@ -81,16 +121,21 @@ export default function App() {
         <Rail clients={clients} persona={persona} send={send} params={data.params}
           perPersona={data.perPersona} blockNumber={data.blockNumber} tick={tick} />
       </div>
+      {tutStep !== null && (
+        <Tutorial step={tutStep} onStep={setTutStep} persona={persona} onPersona={setPersona} />
+      )}
     </Shell>
   );
 }
 
 function Shell({
-  children, status, net, netOptions, onNet, persona, onPersona,
+  children, status, net, netOptions, onNet, persona, onPersona, view, onView, onRunTutorial, notice, onDismissNotice,
 }: {
   children: React.ReactNode; status: string;
   net?: Net; netOptions?: { localhost: boolean; sepolia: boolean }; onNet?: (n: Net) => void;
   persona?: PersonaId; onPersona?: (p: PersonaId) => void;
+  view: View; onView: (v: View) => void; onRunTutorial: () => void;
+  notice?: { kind: "busy" | "ok" | "err"; text: string } | null; onDismissNotice?: () => void;
 }) {
   return (
     <>
@@ -99,6 +144,13 @@ function Shell({
           <span className="wordmark">Signal<span className="stake">Stake</span></span>
           <span className="tagline">a staked scam-warning exchange</span>
           <span className="spacer" />
+          <nav className="view-nav" aria-label="View">
+            <span className="seg">
+              <button aria-pressed={view === "dashboard"} onClick={() => onView("dashboard")}>dashboard</button>
+              <button aria-pressed={view === "guide"} onClick={() => onView("guide")}>guide</button>
+            </span>
+          </nav>
+          <button className="tut-launch" onClick={onRunTutorial}>run tutorial</button>
           {net && <span className="netchip"><span className="dot">●</span> {net}</span>}
           <span className="netchip">{status}</span>
         </header>
@@ -121,6 +173,14 @@ function Shell({
             )}
           </nav>
         )}
+        {notice && (
+          <div className={`notice ${notice.kind}`} role="status">
+            <span className="notice-text">{notice.text}</span>
+            {onDismissNotice && (
+              <button className="notice-close" aria-label="Dismiss message" onClick={onDismissNotice}>×</button>
+            )}
+          </div>
+        )}
       </div>
       <main>{children}</main>
     </>
@@ -137,6 +197,7 @@ npm run node          # terminal 1 — local chain{"\n"}
 npm run deploy:local  # terminal 2 — contracts + demo members{"\n"}
 npm run seed:local    # stake, fund pool, post the Mdm Tan signal
       </pre>
+      New here? Open the <b>guide</b> in the masthead — or press <b>run tutorial</b> once the dashboard is up.
     </div>
   );
 }
