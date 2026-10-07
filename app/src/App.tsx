@@ -4,6 +4,7 @@ import {
   type Clients, type Deployment, type PersonaId,
 } from "./lib/chain";
 import { channelInit } from "./lib/offchain";
+import { clearGlow, glowRef, REF_TARGETS } from "./lib/refTargets";
 import { OffchainLane } from "./components/OffchainLane";
 import { OnchainLane } from "./components/OnchainLane";
 import { Rail } from "./components/Rail";
@@ -74,6 +75,7 @@ export default function App() {
   }, [clients, tick]);
 
   const startTutorial = useCallback(() => {
+    clearGlow();
     localStorage.setItem("signalstake-tutorial-launched", "1");
     setTutLaunched(true);
     setView("dashboard");
@@ -81,9 +83,19 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
   const gotoView = useCallback((v: View) => {
+    clearGlow();
     setView(v);
     if (v === "guide") setTutStep(null);
     window.scrollTo(0, 0);
+  }, []);
+  // A guide reference: jump to the dashboard, take the right persona, glow the control.
+  const gotoRef = useCallback((label: string) => {
+    const t = REF_TARGETS[label];
+    if (!t) return;
+    setTutStep(null);
+    setView("dashboard");
+    if (t.persona) setPersona(t.persona);
+    window.setTimeout(() => glowRef(label), 450);
   }, []);
   const netOptions = { localhost: !!deployments.localhost, sepolia: !!deployments.sepolia };
 
@@ -92,7 +104,7 @@ export default function App() {
       <Shell status={status} net={net} netOptions={netOptions} onNet={setNet}
         view={view} onView={gotoView} onRunTutorial={startTutorial}
         notice={notice} onDismissNotice={() => setNotice(null)} tutGlow={!tutLaunched}>
-        <GuidePage onRunTutorial={startTutorial} />
+        <GuidePage onRunTutorial={startTutorial} onGotoRef={gotoRef} />
       </Shell>
     );
   }

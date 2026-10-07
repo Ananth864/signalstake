@@ -1,9 +1,12 @@
+import { type ReactNode } from "react";
 import { Btn, Chip } from "./ui";
 
 /**
  * The Guide: how to run SignalStake. Static content; no chain needed.
+ * Button references are live: clicking one jumps to the dashboard, switches
+ * persona if needed, and glows the actual control until the next action.
  */
-export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
+export function GuidePage({ onRunTutorial, onGotoRef }: { onRunTutorial: () => void; onGotoRef: (label: string) => void }) {
   return (
     <div className="guide">
       <header className="guide-hero">
@@ -14,6 +17,7 @@ export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
           The bank and an independent confirmer both sign the outcome. The contract then pays the telco a reward,
           or takes part of its stake. Warning details never go on-chain, only their hash.
         </p>
+        <p className="guide-note">Every <Ref label="Deposit stake" onGo={onGotoRef} />-style name below is live: click it and the dashboard opens with that control glowing.</p>
         <div className="guide-cta">
           <Btn variant="chain" onClick={onRunTutorial}>Run the interactive tutorial</Btn>
           <span className="hint">12 short steps, right on the live dashboard.</span>
@@ -34,7 +38,7 @@ export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
               <h3>{c.label}</h3>
               <p className="cast-blurb">{c.blurb}</p>
               <p className="cast-does">{c.does}</p>
-              {c.clicks.length > 0 && <p className="cast-clicks">clicks: {c.clicks.map((b) => <code key={b}>{b}</code>)}</p>}
+              {c.clicks.length > 0 && <p className="cast-clicks">clicks: {c.clicks.map((b) => <Ref key={b} label={b} onGo={onGotoRef} />)}</p>}
             </div>
           ))}
         </div>
@@ -53,7 +57,7 @@ export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
               <div className="step-body">
                 <p className="step-who"><span className="who-tag">{s.who}</span>{s.where && <span className="where"> · {s.where}</span>}</p>
                 <p>{s.what}</p>
-                {s.click && <p className="step-click">click <code>{s.click}</code></p>}
+                {s.click && <p className="step-click">click <Ref label={s.click} onGo={onGotoRef} />{s.clickThen && <> then <Ref label={s.clickThen} onGo={onGotoRef} /></>}</p>}
                 {s.see && <p className="step-see"><Chip kind="settle">then</Chip>{s.see}</p>}
               </div>
             </li>
@@ -75,7 +79,7 @@ export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
             <div className="step-body">
               <p className="step-who"><span className="who-tag">bank</span> <span className="who-tag">confirmer</span></p>
               <p>Open the case. Both vote false alarm.</p>
-              <p className="step-click">click <code>Vote false alarm</code> and <code>Second: false alarm</code></p>
+              <p className="step-click">click <Ref label="Vote false alarm" onGo={onGotoRef} /> and <Ref label="Second: false alarm" onGo={onGotoRef} /></p>
             </div>
           </li>
           <li><span className="step-no alt" aria-hidden="true">3</span>
@@ -96,7 +100,7 @@ export function GuidePage({ onRunTutorial }: { onRunTutorial: () => void }) {
             <span role="columnheader">enforced by</span>
             <span role="columnheader">where you see it</span>
           </div>
-          {GUARDRAILS.map((g, i) => (
+          {GUARDRAILS(onGotoRef).map((g, i) => (
             <div className="guard-row" role="row" key={i}>
               <span role="cell">{g.rule}</span>
               <span role="cell" className="mono">{g.by}</span>
@@ -125,14 +129,23 @@ cd app && npm install && npm run dev   # http://localhost:5173`}</pre>
         </p>
         <aside className="demo-tip">
           <b>Skip the 5-minute wait.</b> Two ways. As the regulator, set <b>Dispute window</b> to 1 minute and press
-          <code>Set</code>. The contract reads the window at finalize time, so <code>Finalize</code> appears in 60 seconds.
-          Or move chain time from a Hardhat console attached to the node:
+          <Ref label="Set" onGo={onGotoRef} />. The contract reads the window at finalize time, so
+          <Ref label="Finalize" onGo={onGotoRef} /> appears in 60 seconds. Or move chain time from a Hardhat console
+          attached to the node:
           <pre className="guide-pre tight">{`await network.provider.send("evm_increaseTime", [301]);
 await network.provider.send("evm_mine");`}</pre>
-          <span>This jumps the chain 302 seconds ahead, and <code>Finalize</code> lights up.</span>
+          <span>This jumps the chain 302 seconds ahead, and <Ref label="Finalize" onGo={onGotoRef} /> lights up.</span>
         </aside>
       </section>
     </div>
+  );
+}
+
+function Ref({ label, onGo }: { label: string; onGo: (label: string) => void }) {
+  return (
+    <button type="button" className="ref-code" title={`Show ${label} in the dashboard`} onClick={() => onGo(label)}>
+      {label}
+    </button>
   );
 }
 
@@ -163,7 +176,7 @@ const CAST = [
   },
 ];
 
-const HAPPY_PATH: { who: string; where?: string; what: string; click?: string; see?: string }[] = [
+const HAPPY_PATH: { who: string; where?: string; what: string; click?: string; clickThen?: string; see?: string }[] = [
   {
     who: "telco", where: "Stake vault",
     what: "Stake S$ 500. Below the minimum, the contract rejects new warnings.",
@@ -203,15 +216,16 @@ const HAPPY_PATH: { who: string; where?: string; what: string; click?: string; s
   {
     who: "anyone", where: "Cases",
     what: "Wait for the window, then close the case. Settlement happens once and pays automatically.",
-    click: "Finalize, then Settle — pay / slash",
+    click: "Finalize",
+    clickThen: "Settle — pay / slash",
     see: "Ledger: settled, reward S$ 200 paid. Telco accuracy 1 of 1, 100%.",
   },
 ];
 
-const GUARDRAILS = [
+const GUARDRAILS = (go: (label: string) => void): { rule: string; by: string; ui: ReactNode }[] => [
   { rule: "Non-members cannot post signals", by: "ParticipantRegistry", ui: "only registered wallets hold provider keys" },
   { rule: "A stake below S$ 500 blocks posting", by: "StakeVault", ui: "the Staked value turns red" },
-  { rule: "Expired signals cannot back a case", by: "SignalRegistry, CaseManager", ui: "the chip flips to expired; the red Try-case button shows the refusal" },
+  { rule: "Expired signals cannot back a case", by: "SignalRegistry, CaseManager", ui: <>the chip flips to expired; the red <Ref label="Try case on expired signal" onGo={go} /> button shows the refusal</> },
   { rule: "One vote is never enough", by: "OutcomeOracle", ui: "settle needs two matching votes; a dispute resets them" },
   { rule: "A case settles once", by: "RewardPool", ui: "the settle button disappears after settlement" },
   { rule: "No early exit from the vault", by: "StakeVault", ui: "withdraw waits out the cooldown and needs zero open cases" },
