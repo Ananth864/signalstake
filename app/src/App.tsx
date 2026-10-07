@@ -76,12 +76,21 @@ export default function App() {
 
   const startTutorial = useCallback(() => {
     clearGlow();
+    if (!deployments.localhost) {
+      // Hosted read-only site: the tutorial's panels and writes don't exist here.
+      setNotice({
+        kind: "err",
+        text: "The tutorial runs on the local node, which this site doesn't have. Start one with: npm run node, then npm run deploy:local && npm run seed:local, and open http://localhost:5173. (Here you're browsing the read-only Sepolia deployment.)",
+      });
+      return;
+    }
     localStorage.setItem("signalstake-tutorial-launched", "1");
     setTutLaunched(true);
+    setNet("localhost");
     setView("dashboard");
     setTutStep(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  }, [deployments.localhost]);
   const gotoView = useCallback((v: View) => {
     clearGlow();
     setView(v);

@@ -10,7 +10,7 @@ import type { PersonaId } from "../lib/chain";
 const STEPS: { title: string; body: ReactNode; persona?: PersonaId; selector?: string }[] = [
   {
     title: "Welcome to the exchange",
-    body: <>SignalStake settles scam warnings with money on the line: telcos stake, banks hold payments, two independent signatures decide, the contract pays or slashes. This tour walks the real UI, and you can click along. Make sure <b>local node</b> is selected up top.</>,
+    body: <>SignalStake settles scam warnings with money on the line: telcos stake, banks hold payments, two independent signatures decide, the contract pays or slashes. This tour walks the real UI, and you can click along. It runs on the <b>local node</b> — already selected for you.</>,
   },
   {
     title: "You are four people",
